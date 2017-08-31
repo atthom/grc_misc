@@ -4,7 +4,6 @@ import sqlite3
 import subprocess
 
 conn = sqlite3.connect('blockchain.db')
-
 names = "(nextblockhash, ResearchAverageMagnitude, ClientVersion, size, BoincSignature, proofhash, blocktrust, " \
         "IsSuperBlock, chaintrust, Magnitude, ResearchSubsidy, CPIDv2, merkleroot, previousblockhash, tx, time, " \
         "Interest, version, ResearchMagnitudeUnit, nonce, SignatureValid, BoincPublicKey, hash, confirmations, mint, " \
@@ -16,13 +15,61 @@ vals = "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
        "?, ?, ?, ?) "
 sql_insert = "INSERT INTO block VALUES " + vals
 
+sqlite3.register_adapter(bool, int)
+sqlite3.register_converter("BOOLEAN", lambda v: bool(int(v)))
+sql_create = '''
+CREATE TABLE IF NOT EXISTS block (
+     nextblockhash INTEGER,
+     ResearchAverageMagnitude REAL,
+     ClientVersion TEXT,
+     size INTEGER,
+     BoincSignature TEXT,
+     proofhash TEXT,
+     blocktrust TEXT,
+     IsSuperBlock INTEGER,
+     chaintrust TEXT,
+     Magnitude REAL,
+     ResearchSubsidy REAL,
+     CPIDv2 TEXT,
+     merkleroot TEXT,
+     previousblockhash TEXT,
+     tx TEXT,
+     time INTEGER,
+     Interest REAL,
+     version INTEGER,
+     ResearchMagnitudeUnit REAL,
+     nonce INTEGER,
+     SignatureValid BOOLEAN,
+     BoincPublicKey TEXT,
+     hash TEXT,
+     confirmations INTEGER,
+     mint REAL,
+     CPID TEXT,
+     bits TEXT,
+     modifierchecksum TEXT,
+     modifier TEXT,
+     difficulty REAL,
+     NeuralHash TEXT,
+     entropybit INTEGER,
+     LastPORBlockHash TEXT,
+     GRCAddress TEXT,
+     flags TEXT,
+     ResearchAge REAL,
+     CPIDValid BOOLEAN,
+     height INTEGER PRIMARY KEY,
+     LastPaymentTime TEXT,
+     IsContract INTEGER
+);'''
+conn.execute(sql_create)
+blocks = list()
+
 
 def insertToBDD(item: tuple):
     try:
         conn.execute(sql_insert, item)
         conn.commit()
-    except:
-        pass
+    except Exception as e:
+        print(e)
 
 
 def insertMany(tuples):
@@ -117,11 +164,17 @@ def getTuple(block: dict):
 
 
 def pipe_eval(pipe: bytes):
+    p = str(pipe, encoding="utf-8").replace("true", "True").replace("false", "False")
     return eval(str(pipe, encoding="utf-8").replace("true", "True").replace("false", "False"))
 
 
 def get_last_block_id():
     p1 = subprocess.Popen(["gridcoinresearchd", "getblockcount"], stdout=subprocess.PIPE)
+    return p1.communicate()[0]
+
+
+def repairwallet():
+    p1 = subprocess.Popen(["gridcoinresearchd", "repairwallet"], stdout=subprocess.PIPE)
     return p1.communicate()[0]
 
 
@@ -155,8 +208,20 @@ def sql_has_block_hash(hash_val: str):
     return elem == 1
 
 
+def validBlock(currentblock):
+    if currentblock["hash"] == "None":
+        return False
+    if currentblock["previousblockhash"] == "None":
+        return False
+
+    return True
+
+
 def do_insert(hash_val: str):
     currentblock = get_block_by_hash(hash_val)
+    while not validBlock(currentblock):
+        print("Not a validblock, recalling client")
+        currentblock = get_block_by_hash(hash_val)
 
     if not sql_has_block(currentblock["height"]):
         if "nextblockhash" in currentblock:
@@ -166,11 +231,11 @@ def do_insert(hash_val: str):
     return None
 
 
-blocks = list()
-
-
-def do_better_insert(hash_val: str):
+def do_better_insert(hash_val: bytes):
     currentblock = get_block_by_hash(hash_val)
+    while not validBlock(currentblock):
+        print("Not a validblock, recalling client")
+        currentblock = get_block_by_hash(hash_val)
 
     if not sql_has_block(currentblock["height"]):
         if "nextblockhash" in currentblock:
@@ -208,55 +273,5 @@ def sync_database():
     check_db()
 
 
-p1 = subprocess.Popen(["gridcoinresearchd", "list", "network"], stdout=subprocess.PIPE)
-print(str(p1.communicate()[0], encoding="utf-8"))
-
-"""
-
-A dict fetched by the sql table should have this look :
-(take care that the order is not garanteed)
-    {
-        'BoincPublicKey': '075ce33a17eac7a513dd3afd5ce6f4b49f1c28e7e2473a525b6b6f51c674bb1a',
-        'BoincSignature': 'MEQCIA3gIgcVHE8rdFbWbGFUbwFLGmh/3+qBK2IQjXcw+jseAiAL7If7N9GfMijDUfkq0uDOd7bCQJd0yzZfgQlcXDwCEg==',
-        'CPID': '8cfe9864e18db32a334b7de997f5a4f2',
-        'CPIDValid': 1,
-        'CPIDv2': '8cfe9864e18db32a334b7de997f5a4f2',
-        'ClientVersion': 'v3.5.8.4-g-research',
-        'GRCAddress': 'SCZE6pX79dCU5eXb5Q5fUMmNKAG9Tsrvmf',
-        'Interest': 0.11,
-        'IsContract': 0,
-        'IsSuperBlock': 0,
-        'LastPORBlockHash': 'c7a1fef6c02ceea32efdd04d89931dabf42aebe42a79de90b5a324ba36d49649',
-        'LastPaymentTime': '01-24-2017 22:10:40',
-        'Magnitude': 90.0,
-        'NeuralHash': '',
-        'ResearchAge': 0.270556,
-        'ResearchAverageMagnitude': 90.0,
-        'ResearchMagnitudeUnit': 0.225,
-        'ResearchSubsidy': 5.48,
-        'SignatureValid': 0,
-        'bits': '1c08c713',
-        'blocktrust': '1d2a3fc900',
-        'chaintrust': '73e0f0cf86557b2bb40f58d5b9d39693c2c893c4fe568da696164ea677f8121',
-        'confirmations': 195218,
-        'difficulty': 29.16459076,
-        'entropybit': 0,
-        'flags': 'proof-of-stake proof-of-research',
-        'hash': '04c43c3c801737c2b5e7f65c316ee5d60c636a810df12518e8b96c267841e96cc38d0478288fd892b3c74fe79b659f4ff33c53c4cd69064ee7949c097b68fdf9b6',
-        'height': 799744,
-        'merkleroot': '6176180bb6d047c8ba092f8591310006aea17b966290fc3bc54caea6116302d1',
-        'mint': 5.58970124,
-        'modifier': '350aa02f555a3b84',
-        'modifierchecksum': '0530a51f',
-        'nextblockhash': 'a9b34f9bc5094ff8e0470213e1e978d23934f45e24aa4682a865d34bcad47812',
-        'nonce': 307465,
-        'previousblockhash': 'a2f66b374af57bd16b29c44f2e0797e69b21f38d265f7ae63346d75b7ceda623',
-        'proofhash': '00000244d7badcca070de90352f0579bbad08f65c9f1d64410a0e06f588d0228',
-        'size': 1198,
-        'time': 1485319360,
-        'tx': "['2a40e543f970d48d9d04fec7c9ca78e946daba375fbfb5ed92bf5e182803b510', "
-              "'ac8774c6648dfb224832b18965b5f80d12885375421836b6047abc135c282eb6']",
-        'version': 7
-    }
-
-"""
+if __name__ == '__main__':
+    sync_database()
