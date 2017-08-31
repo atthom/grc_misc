@@ -94,6 +94,6 @@ This code below is fetching a block in the database. A dict fetched by the sql t
     }
 ```
 
+---------------
 
-
-**Buy me a Gridcoin Coffe ? S5u3bTUxmfraYoYJ367dP7hhhJvR7jR274**
+## Buy me a Gridcoin Coffe ? S5u3bTUxmfraYoYJ367dP7hhhJvR7jR274
