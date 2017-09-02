@@ -9,7 +9,6 @@ names = "(hash, confirmations, size, height, version, merkleroot, mint, MoneySup
         "CPID, ProjectName, RAC, NetworkRAC, RSAWeight, Magnitude, LastPaymentTime, ResearchSubsidy, ResearchAge, " \
         "ResearchMagnitudeUnit, ResearchAverageMagnitude, LastPORBlockHash, Interest, GRCAddress, ClientVersion, " \
         "CPIDv2, CPIDValid, NeuralHash, IsSuperBlock, IsContract) "
-# 40
 
 vals = "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, " \
        "?, ?, ?, ?, ?, ?, ?, ?, ?) "
@@ -164,6 +163,7 @@ def getTuple(block: dict):
         block["ResearchAverageMagnitude"] = None
     if "MoneySupply" not in block:
         block["MoneySupply"] = None
+
     block["tx"] = str(block["tx"])
 
     return (block["hash"], block["confirmations"], block["size"], block["height"], block["version"],
@@ -249,7 +249,5 @@ def sync_database():
     check_db()
 
 
-# pprint(getblock("5634095e42b6d1717944a3d431bb7625f68ee7b354ed3a4c74fb27a4edc14c58"), indent=4)
-# pprint(getblock("a68151d9957a539da94343622e03a839dbd1f52b22d882d421bf5b876cbe1ba6"), indent=4)
 if __name__ == '__main__':
     sync_database()

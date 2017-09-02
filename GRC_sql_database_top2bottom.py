@@ -11,7 +11,6 @@ names = "(nextblockhash, ResearchAverageMagnitude, ClientVersion, size, BoincSig
         "Interest, version, ResearchMagnitudeUnit, nonce, SignatureValid, BoincPublicKey, hash, confirmations, mint, " \
         "CPID, bits, modifierchecksum, modifier, difficulty, NeuralHash, entropybit,  LastPORBlockHash, GRCAddress, " \
         "flags, ResearchAge, CPIDValid, height, LastPaymentTime, IsContract) "
-# 40
 
 vals = "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, " \
        "?, ?, ?, ?) "
@@ -166,7 +165,6 @@ def getTuple(block: dict):
 
 
 def pipe_eval(pipe: bytes):
-    p = str(pipe, encoding="utf-8").replace("true", "True").replace("false", "False")
     return eval(str(pipe, encoding="utf-8").replace("true", "True").replace("false", "False"))
 
 
@@ -215,7 +213,6 @@ def validBlock(currentblock):
         return False
     if currentblock["previousblockhash"] == "None":
         return False
-
     return True
 
 
@@ -226,7 +223,7 @@ def do_insert(hash_val: str):
         currentblock = get_block_by_hash(hash_val)
 
     if not sql_has_block(currentblock["height"]):
-        if "nextblockhash" in currentblock:
+        if "previousblockhash" in currentblock:
             insertToBDD(getTuple(currentblock))
             print("Block n°", currentblock["height"])
         return currentblock["previousblockhash"]
@@ -240,7 +237,7 @@ def do_better_insert(hash_val: bytes):
         currentblock = get_block_by_hash(hash_val)
 
     if not sql_has_block(currentblock["height"]):
-        if "nextblockhash" in currentblock:
+        if "previousblockhash" in currentblock:
             blocks.append(getTuple(currentblock))
             print("Block n°", currentblock["height"])
         if len(blocks) == 100:
